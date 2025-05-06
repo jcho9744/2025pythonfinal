@@ -159,16 +159,21 @@ def export_csv():
 # Route for generating and serving a stock price graph
 @app.route('/plot/<symbol>')
 def plot(symbol):
-    start_date = request.args.get('start_date', (datetime.now() - timedelta(days=365)).strftime('%Y-%m-%d'))
+    start_date = request.args.get('start_date', (datetime.now() - timedelta(days=730)).strftime('%Y-%m-%d'))
     end_date = request.args.get('end_date', datetime.now().strftime('%Y-%m-%d'))
 
     df = fetch_stock_data(symbol, start_date, end_date)
     if df.empty:
         return "No data available to plot", 404
 
-    # Create the plot
+    # Add moving averages to the plot
+    df['MA30'] = df['Close'].rolling(window=30).mean()
+    df['MA270'] = df['Close'].rolling(window=270).mean()
+
     plt.figure(figsize=(10, 6))
     plt.plot(df['Date'], df['Close'], label='Close Price', color='blue')
+    plt.plot(df['Date'], df['MA30'], label='30-Day MA', color='orange', linestyle='--')
+    plt.plot(df['Date'], df['MA270'], label='270-Day MA', color='green', linestyle='--')
     plt.title(f"{COMPANIES.get(symbol, symbol)} Stock Prices")
     plt.xlabel("Date")
     plt.ylabel("Close Price (USD)")
